@@ -28,6 +28,13 @@ package_group(
 )
 
 package_group(
+    name = "flutter_builders",
+    packages = [
+        "//builders/gcp/base",
+    ],
+)
+
+package_group(
     name = "go_builders",
     packages = [
         "//builders/gcp/base",

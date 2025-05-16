@@ -17,7 +17,7 @@ package main
 import (
 	"testing"
 
-	buildpacktest "github.com/GoogleCloudPlatform/buildpacks/internal/buildpacktest"
+	"github.com/GoogleCloudPlatform/buildpacks/internal/buildpacktest"
 )
 
 func TestDetect(t *testing.T) {
@@ -27,41 +27,17 @@ func TestDetect(t *testing.T) {
 		want  int
 	}{
 		{
-			name: "with pubspec",
+			name: ".dart files",
 			files: map[string]string{
-				"foo.dart":     "",
-				"pubspec.yaml": "",
+				"main.dart": "",
 			},
 			want: 0,
 		},
 		{
-			name: "without pubspec",
-			files: map[string]string{
-				"foo.dart": "",
-			},
-			want: 0,
+			name:  "no files",
+			files: map[string]string{},
+			want:  100,
 		},
-		{
-			name: "without dart files",
-			files: map[string]string{
-				"index.txt": "",
-			},
-			want: 100,
-		},
-		{
-			name: "with flutter",
-			files: map[string]string{
-				"foo.dart":     "",
-				"pubspec.yaml":  `
-name: example_flutter_app
-
-dependencies:
-  flutter:
-    sdk: flutter
-`,
-			},
-			want: 100,
-		},		
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

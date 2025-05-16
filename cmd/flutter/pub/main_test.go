@@ -39,29 +39,8 @@ func TestDetect(t *testing.T) {
 			files: map[string]string{
 				"foo.dart": "",
 			},
-			want: 0,
-		},
-		{
-			name: "without dart files",
-			files: map[string]string{
-				"index.txt": "",
-			},
 			want: 100,
 		},
-		{
-			name: "with flutter",
-			files: map[string]string{
-				"foo.dart":     "",
-				"pubspec.yaml":  `
-name: example_flutter_app
-
-dependencies:
-  flutter:
-    sdk: flutter
-`,
-			},
-			want: 100,
-		},		
 	}
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {

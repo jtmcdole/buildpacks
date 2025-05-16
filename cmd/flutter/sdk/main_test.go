@@ -32,14 +32,14 @@ func TestDetect(t *testing.T) {
 				"foo.dart":     "",
 				"pubspec.yaml": "",
 			},
-			want: 0,
+			want: 100,
 		},
 		{
 			name: "without pubspec",
 			files: map[string]string{
 				"foo.dart": "",
 			},
-			want: 0,
+			want: 100,
 		},
 		{
 			name: "without dart files",
@@ -60,7 +60,7 @@ dependencies:
     sdk: flutter
 `,
 			},
-			want: 100,
+			want: 0,
 		},		
 	}
 	for _, tc := range testCases {

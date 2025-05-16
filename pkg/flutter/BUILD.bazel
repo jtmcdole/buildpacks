@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+licenses(["notice"])
+
+go_library(
+    name = "flutter",
+    srcs = [
+        "flutter.go",
+    ],
+    importpath = "github.com/GoogleCloudPlatform/buildpacks/" + package_name(),
+    visibility = [
+        "//:__subpackages__",
+    ],
+    deps = [
+        "//pkg/buildererror",
+        "//pkg/env",
+        "//pkg/gcpbuildpack",
+        "@com_github_hashicorp_go_retryablehttp//:go_default_library",
+        "@in_gopkg_yaml_v2//:go_default_library",
+    ],
+)
+
+go_test(
+    name = "flutter_test",
+    srcs = [
+        "flutter_test.go",
+    ],
+    embed = [":flutter"],
+    rundir = ".",
+    deps = ["//internal/testserver"],
+)

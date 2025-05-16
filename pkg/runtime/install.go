@@ -34,6 +34,7 @@ import (
 
 var (
 	dartSdkURL         = "https://storage.googleapis.com/dart-archive/channels/stable/release/%s/sdk/dartsdk-linux-x64-release.zip"
+	flutterSdkURL      = "https://storage.googleapis.com/flutter_infra_release/releases/%s"
 	googleTarballURL   = "https://dl.google.com/runtimes/%s/%[2]s/%[2]s-%s.tar.gz"
 	runtimeVersionsURL = "https://dl.google.com/runtimes/%s/%s/version.json"
 	// goTarballURL is the location from which we download Go. This is different from other runtimes
@@ -157,6 +158,35 @@ func InstallDartSDK(ctx *gcp.Context, layer *libcnb.Layer, version string) error
 
 	return nil
 }
+
+// InstallFlutterSDK downloads a given version of the Flutter SDK to the specified layer.
+func InstallFlutterSDK(ctx *gcp.Context, layer *libcnb.Layer, version string, archive string) error {
+	if err := ctx.ClearLayer(layer); err != nil {
+		return fmt.Errorf("clearing layer %q: %w", layer.Name, err)
+	}
+	sdkURL := fmt.Sprintf(flutterSdkURL, archive)
+
+	tar, err := ioutil.TempFile(layer.Path, "flutter_linux*.tar.xz")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tar.Name())
+
+	if err := fetch.GetURL(sdkURL, tar); err != nil {
+		ctx.Warnf("Failed to download Flutter SDK from %s. You can specify the verison by setting the GOOGLE_RUNTIME_VERSION environment variable", sdkURL)
+		return err
+	}
+
+	if _, err := ctx.Exec([]string{"tar", "xJ", tar.Name(), "--strip-components", "1", "-d", layer.Path}); err != nil {
+		return fmt.Errorf("extracting Flutter SDK: %v", err)
+	}
+
+	ctx.SetMetadata(layer, stackKey, ctx.StackID())
+	ctx.SetMetadata(layer, versionKey, version)
+
+	return nil
+}
+
 
 // InstallTarballIfNotCached installs a runtime tarball hosted on dl.google.com into the provided layer
 // with caching.
