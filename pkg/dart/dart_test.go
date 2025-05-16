@@ -118,7 +118,7 @@ dev_dependencies:
 			want: true,
 		},
 		{
-			name: "with dev_dependency",
+			name: "with dependency",
 			pubspec: `
 name: example_json_function
 
@@ -152,6 +152,67 @@ dev_dependencies:
 			}
 			if got != tc.want {
 				t.Errorf("HasBuildRunner(%q) = %t, want %t", dir, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestIsFlutter(t *testing.T) {
+	testCases := []struct {
+		name    string
+		pubspec string
+		want    bool
+		wantErr bool
+	}{
+		{
+			name: "no pubspec.yaml",
+		},
+		{
+			name:    "no dependencies",
+			pubspec: `name: test`,
+		},
+		{
+			name: "no flutter",
+			pubspec: `
+name: example_json_function
+
+dependencies:
+  functions_framework: ^0.4.0
+`,
+		},
+		{
+			name: "with dev_dependency",
+			pubspec: `
+name: example_json_function
+
+dependencies:
+  flutter:
+    sdk: flutter
+`,
+			want: true,
+		},
+		{
+			name:    "invalid yaml",
+			pubspec: "\t",
+			wantErr: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tc.pubspec != "" {
+				path := filepath.Join(dir, "pubspec.yaml")
+				if err := os.WriteFile(path, []byte(tc.pubspec), 0744); err != nil {
+					t.Fatalf("writing %s: %v", path, err)
+				}
+			}
+			got, err := IsFlutter(dir)
+			if tc.wantErr == (err == nil) {
+				t.Errorf("IsFlutter(%q) got error: %v, want err? %t", dir, err, tc.wantErr)
+			}
+			if got != tc.want {
+				t.Errorf("IsFlutter(%q) = %t, want %t", dir, got, tc.want)
 			}
 		})
 	}
