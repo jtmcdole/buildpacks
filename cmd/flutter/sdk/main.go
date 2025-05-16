@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	flutterLayer      = "flutter"
+	flutterLayer   = "flutter"
 	defaultVersion = "3.29.3"
 )
 

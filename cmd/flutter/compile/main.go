@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Implements dart/compile buildpack.
-// The compile buildpack runs dart compile to produce a self-contained executable.
+// Implements flutter/compile buildpack.
+// The compile buildpack runs flutter to build a webapp and dart to compile the server.
 package main
 
 import (
@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/buildpacks/pkg/dart"
 	"github.com/GoogleCloudPlatform/buildpacks/pkg/env"
+	"github.com/GoogleCloudPlatform/buildpacks/pkg/flutter"
 	gcp "github.com/GoogleCloudPlatform/buildpacks/pkg/gcpbuildpack"
 )
 
@@ -38,10 +39,18 @@ func detectFn(ctx *gcp.Context) (gcp.DetectResult, error) {
 	if !atLeastOne {
 		return gcp.OptOut("no .dart files found"), nil
 	}
+	flutter, err := flutter.IsFlutter(ctx.ApplicationRoot())
+	if err != nil {
+		return nil, err
+	}
+	if !flutter {
+		return gcp.OptOut("pubspec.yaml does not include flutter dependency"), nil
+	}
 	return gcp.OptIn("found .dart files"), nil
 }
 
 func buildFn(ctx *gcp.Context) error {
+
 	br, err := dart.HasBuildRunner(ctx.ApplicationRoot())
 	if err != nil {
 		return err

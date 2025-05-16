@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/GoogleCloudPlatform/buildpacks/pkg/dart"
+	"github.com/GoogleCloudPlatform/buildpacks/pkg/flutter"
 	gcp "github.com/GoogleCloudPlatform/buildpacks/pkg/gcpbuildpack"
 	"github.com/GoogleCloudPlatform/buildpacks/pkg/runtime"
 )
@@ -42,7 +43,7 @@ func detectFn(ctx *gcp.Context) (gcp.DetectResult, error) {
 		return nil, err
 	}
 	if pubspecExists {
-		flutter, err := dart.IsFlutter(ctx.ApplicationRoot())
+		flutter, err := flutter.IsFlutter(ctx.ApplicationRoot())
 		if err != nil {
 			return nil, err
 		}

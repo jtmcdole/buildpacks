@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package dart
+package flutter
 
 import (
 	"net/http"
@@ -30,21 +30,99 @@ func TestResolvePackageVersion(t *testing.T) {
 		httpStatus int
 		response   string
 		want       string
+		archive    string
 		wantError  bool
 	}{
 		{
 			name: "from env",
-			env:  "2.14.0",
-			want: "2.14.0",
+			env:  "3.32.0-0.5.pre",
+			response: `{
+  "base_url": "https://storage.googleapis.com/flutter_infra_release/releases",
+  "current_release": {
+    "beta": "48ea72a87d7fc69d73aa2531ded8a5da9d13b2bd",
+    "dev": "13a2fb10b838971ce211230f8ffdd094c14af02c",
+    "stable": "ea121f8859e4b13e47a8f845e4586164519588bc"
+  },
+  "releases": [
+    {
+      "hash": "48ea72a87d7fc69d73aa2531ded8a5da9d13b2bd",
+      "channel": "beta",
+      "version": "3.32.0-0.5.pre",
+      "dart_sdk_version": "3.8.0",
+      "dart_sdk_arch": "x64",
+      "release_date": "2025-05-16T19:00:28.219866Z",
+      "archive": "beta/linux/flutter_linux_3.32.0-0.5.pre-beta.tar.xz",
+      "sha256": "c7833044a7954aed020b54057fd80eeb39c8655c505d7e5896c9c13a7c10713b"
+    },
+    {
+      "hash": "ea121f8859e4b13e47a8f845e4586164519588bc",
+      "channel": "stable",
+      "version": "3.29.3",
+      "dart_sdk_version": "3.7.2",
+      "dart_sdk_arch": "x64",
+      "release_date": "2025-04-14T17:25:51.061305Z",
+      "archive": "stable/linux/flutter_linux_3.29.3-stable.tar.xz",
+      "sha256": "8a908a5add53c1dfc2031da29e58daefd59a6d1d52fb5cb61f5ee52c73e36e15"
+    },
+    {
+      "hash": "c23637390482d4cf9598c3ce3f2be31aa7332daf",
+      "channel": "stable",
+      "version": "3.29.2",
+      "dart_sdk_version": "3.7.2",
+      "dart_sdk_arch": "x64",
+      "release_date": "2025-03-14T14:20:23.400177Z",
+      "archive": "stable/linux/flutter_linux_3.29.2-stable.tar.xz",
+      "sha256": "6096f21370773093ec19240e133664c1c12eb8b5a85605a92d16ce462a18eac4"
+    }	
+  ]
+}`,
+			want:    "3.32.0-0.5.pre",
+			archive: "beta/linux/flutter_linux_3.32.0-0.5.pre-beta.tar.xz",
 		},
 		{
 			name: "fetched version",
 			response: `{
-				"date": "2022-02-08",
-				"version": "2.16.1",
-				"revision": "0180af250ff518cc0fa494a4eb484ce11ec1e62c"
-			}`,
-			want: "2.16.1",
+  "base_url": "https://storage.googleapis.com/flutter_infra_release/releases",
+  "current_release": {
+    "beta": "48ea72a87d7fc69d73aa2531ded8a5da9d13b2bd",
+    "dev": "13a2fb10b838971ce211230f8ffdd094c14af02c",
+    "stable": "ea121f8859e4b13e47a8f845e4586164519588bc"
+  },
+  "releases": [
+    {
+      "hash": "48ea72a87d7fc69d73aa2531ded8a5da9d13b2bd",
+      "channel": "beta",
+      "version": "3.32.0-0.5.pre",
+      "dart_sdk_version": "3.8.0",
+      "dart_sdk_arch": "x64",
+      "release_date": "2025-05-16T19:00:28.219866Z",
+      "archive": "beta/linux/flutter_linux_3.32.0-0.5.pre-beta.tar.xz",
+      "sha256": "c7833044a7954aed020b54057fd80eeb39c8655c505d7e5896c9c13a7c10713b"
+    },
+    {
+      "hash": "ea121f8859e4b13e47a8f845e4586164519588bc",
+      "channel": "stable",
+      "version": "3.29.3",
+      "dart_sdk_version": "3.7.2",
+      "dart_sdk_arch": "x64",
+      "release_date": "2025-04-14T17:25:51.061305Z",
+      "archive": "stable/linux/flutter_linux_3.29.3-stable.tar.xz",
+      "sha256": "8a908a5add53c1dfc2031da29e58daefd59a6d1d52fb5cb61f5ee52c73e36e15"
+    },
+    {
+      "hash": "c23637390482d4cf9598c3ce3f2be31aa7332daf",
+      "channel": "stable",
+      "version": "3.29.2",
+      "dart_sdk_version": "3.7.2",
+      "dart_sdk_arch": "x64",
+      "release_date": "2025-03-14T14:20:23.400177Z",
+      "archive": "stable/linux/flutter_linux_3.29.2-stable.tar.xz",
+      "sha256": "6096f21370773093ec19240e133664c1c12eb8b5a85605a92d16ce462a18eac4"
+    }	
+  ]
+}`,
+			want:    "3.29.3",
+			archive: "stable/linux/flutter_linux_3.29.3-stable.tar.xz",
 		},
 		{
 			name:       "bad response code",
@@ -67,91 +145,15 @@ func TestResolvePackageVersion(t *testing.T) {
 				t.Setenv("GOOGLE_RUNTIME_VERSION", tc.env)
 			}
 
-			got, err := DetectSDKVersion()
+			got, archive, err := DetectSDKArchive()
 			if tc.wantError == (err == nil) {
-				t.Errorf(`DetectSDKVersion() got error: %v, want error?: %v`, err, tc.wantError)
+				t.Errorf(`DetectSDKArchive() got error: %v, want error?: %v`, err, tc.wantError)
 			}
 			if got != tc.want {
-				t.Errorf(`DetectSDKVersion() = %q, want %q`, got, tc.want)
+				t.Errorf(`DetectSDKArchive() = %q, want version %q`, got, tc.want)
 			}
-		})
-	}
-}
-
-func TestHasBuildRunner(t *testing.T) {
-	testCases := []struct {
-		name    string
-		pubspec string
-		want    bool
-		wantErr bool
-	}{
-		{
-			name: "no pubspec.yaml",
-		},
-		{
-			name:    "no dependencies",
-			pubspec: `name: test`,
-		},
-		{
-			name: "no build_runner",
-			pubspec: `
-name: example_json_function
-
-dependencies:
-  functions_framework: ^0.4.0
-
-dev_dependencies:
-  functions_framework_builder: ^0.4.0
-`,
-		},
-		{
-			name: "with dev_dependency",
-			pubspec: `
-name: example_json_function
-
-dependencies:
-  functions_framework: ^0.4.0
-
-dev_dependencies:
-  build_runner: ^2.0.0
-`,
-			want: true,
-		},
-		{
-			name: "with dependency",
-			pubspec: `
-name: example_json_function
-
-dependencies:
-  build_runner: ^2.0.0
-
-dev_dependencies:
-  functions_framework: ^0.4.0
-`,
-			want: true,
-		},
-		{
-			name:    "invalid yaml",
-			pubspec: "\t",
-			wantErr: true,
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if tc.pubspec != "" {
-				path := filepath.Join(dir, "pubspec.yaml")
-				if err := os.WriteFile(path, []byte(tc.pubspec), 0744); err != nil {
-					t.Fatalf("writing %s: %v", path, err)
-				}
-			}
-			got, err := HasBuildRunner(dir)
-			if tc.wantErr == (err == nil) {
-				t.Errorf("HasBuildRunner(%q) got error: %v, want err? %t", dir, err, tc.wantErr)
-			}
-			if got != tc.want {
-				t.Errorf("HasBuildRunner(%q) = %t, want %t", dir, got, tc.want)
+			if archive != tc.archive {
+				t.Errorf(`DetectSDKArchive() = %q, want archive %q`, got, tc.archive)
 			}
 		})
 	}

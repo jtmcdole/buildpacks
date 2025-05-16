@@ -52,7 +52,7 @@ func buildFn(ctx *gcp.Context) error {
 	if err := os.Setenv(pubCacheEnv, ml.Path); err != nil {
 		return fmt.Errorf("setting env %s=%s: %w", pubCacheEnv, pubLayer, err)
 	}
-	if _, err := ctx.Exec([]string{"dart", "pub", "get"}, gcp.WithUserAttribution); err != nil {
+	if _, err := ctx.Exec([]string{"flutter", "pub", "get"}, gcp.WithUserAttribution); err != nil {
 		return err
 	}
 	return nil

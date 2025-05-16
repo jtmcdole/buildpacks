@@ -13,10 +13,11 @@
 // limitations under the License.
 
 // Package flutter provides utility methods for building Flutter Dart applications.
-package flutter
+package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -31,7 +32,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var baseURL = ""
 var versionURL = "https://storage.googleapis.com/flutter_infra_release/releases/releases_linux.json"
 
 // releaseDetail contains information about specific releases
@@ -57,12 +57,15 @@ type releaseInfo struct {
 	Releases []releaseDetail `json:"releases"`
 }
 
-// pubspec represents the contents of a pubspec.yaml.
-type pubspec struct {
+// Pubspec represents a small view of a pubspec.yaml.
+type Pubspec struct {
 	Dependencies    map[string]interface{} `yaml:"dependencies"`
 	DevDependencies map[string]interface{} `yaml:"dev_dependencies"`
+	Buildpack       struct {
+		Server string `default:"server" yaml:"server"`
+		Static string `default:"app" yaml:"static"`
+	} `yaml:"buildpack"`
 }
-
 
 // findStableRelease searches for the stable release based on CurrentRelease.Stable hash.
 func findStableRelease(info releaseInfo) (releaseDetail, bool) {
@@ -130,7 +133,7 @@ func downloadManifest() (releaseInfo, error) {
 }
 
 func fetchSpecificSdkArchive(version string) (releaseDetail, error) {
-    info, err := downloadManifest()
+	info, err := downloadManifest()
 	if err != nil {
 		return releaseDetail{}, err
 	}
@@ -143,7 +146,7 @@ func fetchSpecificSdkArchive(version string) (releaseDetail, error) {
 }
 
 func fetchLatestSdkArchive() (releaseDetail, error) {
-    info, err := downloadManifest()
+	info, err := downloadManifest()
 	if err != nil {
 		return releaseDetail{}, err
 	}
@@ -168,7 +171,7 @@ func IsFlutter(dir string) (bool, error) {
 		return false, gcp.InternalErrorf("reading pubspec.yaml: %v", err)
 	}
 
-	var ps pubspec
+	var ps Pubspec
 	if err := yaml.Unmarshal(rawpjs, &ps); err != nil {
 		return false, gcp.UserErrorf("unmarshalling pubspec.yaml: %v", err)
 	}
@@ -177,4 +180,52 @@ func IsFlutter(dir string) (bool, error) {
 		return true, nil
 	}
 	return false, nil
+}
+
+func GetPubspec(dir string) (Pubspec, error) {
+	f := filepath.Join(dir, "pubspec.yaml")
+	rawpjs, err := ioutil.ReadFile(f)
+	if os.IsNotExist(err) {
+		// If there is no pubspec.yaml, there is no build_runner dependency.
+		return Pubspec{}, nil
+	}
+	if err != nil {
+		return Pubspec{}, gcp.InternalErrorf("reading pubspec.yaml: %v", err)
+	}
+
+	var ps Pubspec
+	if err := yaml.Unmarshal(rawpjs, &ps); err != nil {
+		return Pubspec{}, gcp.UserErrorf("unmarshalling pubspec.yaml: %v", err)
+	}
+	return ps, nil
+}
+
+func main() {
+	var info Pubspec
+	yamlString := `name: ffbah_example
+
+workspace:
+  - server
+  - app
+
+environment:
+  sdk: ">=3.7.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.4.0
+  shelf: ^1.4.0
+  shelf_router: ^1.1.0
+
+dev_dependencies:
+  melos: ^7.0.0-dev.7
+`
+	if err := yaml.Unmarshal([]byte(yamlString), &info); err != nil {
+		return
+	}
+	fmt.Printf("sup: %s", info)
+	fmt.Printf("sup: %s", info.Buildpack.Server)
+	fmt.Printf("sup: %s", info.Buildpack.Static)
+
 }
