@@ -25,6 +25,11 @@ builder(
             "//cmd/dart/pub:pub.tgz",
             "//cmd/dart/sdk:sdk.tgz",
         ],
+        "flutter": [
+            "//cmd/flutter/compile:compile.tgz",
+            "//cmd/flutter/pub:pub.tgz",
+            "//cmd/flutter/sdk:sdk.tgz",
+        ],
         "dotnet": [
             "//cmd/dotnet/functions_framework:functions_framework.tgz",
             "//cmd/dotnet/publish:publish.tgz",
@@ -103,6 +108,11 @@ builder(
             "//cmd/dart/compile:compile.tgz",
             "//cmd/dart/pub:pub.tgz",
             "//cmd/dart/sdk:sdk.tgz",
+        ],
+        "flutter": [
+            "//cmd/flutter/compile:compile.tgz",
+            "//cmd/flutter/pub:pub.tgz",
+            "//cmd/flutter/sdk:sdk.tgz",
         ],
         "dotnet": [
             "//cmd/dotnet/functions_framework:functions_framework.tgz",

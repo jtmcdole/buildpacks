@@ -13,11 +13,10 @@
 // limitations under the License.
 
 // Package flutter provides utility methods for building Flutter Dart applications.
-package main
+package flutter
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -57,14 +56,18 @@ type releaseInfo struct {
 	Releases []releaseDetail `json:"releases"`
 }
 
+type Buildpack struct {
+	Server    *string `yaml:"server"`
+	Static    *string `yaml:"static"`
+	Prebuild  *string `yaml:"prebuild"`
+	Postbuild *string `yaml:"postbuild"`
+}
+
 // Pubspec represents a small view of a pubspec.yaml.
 type Pubspec struct {
 	Dependencies    map[string]interface{} `yaml:"dependencies"`
 	DevDependencies map[string]interface{} `yaml:"dev_dependencies"`
-	Buildpack       struct {
-		Server string `default:"server" yaml:"server"`
-		Static string `default:"app" yaml:"static"`
-	} `yaml:"buildpack"`
+	Buildpack       *Buildpack             `yaml:"buildpack"`
 }
 
 // findStableRelease searches for the stable release based on CurrentRelease.Stable hash.
@@ -161,18 +164,8 @@ func fetchLatestSdkArchive() (releaseDetail, error) {
 // IsFlutter returns true if the given Dart project contains a pubspec.yaml that declares a
 // dependency on flutter.
 func IsFlutter(dir string) (bool, error) {
-	f := filepath.Join(dir, "pubspec.yaml")
-	rawpjs, err := ioutil.ReadFile(f)
-	if os.IsNotExist(err) {
-		// If there is no pubspec.yaml, there is no build_runner dependency.
-		return false, nil
-	}
+	ps, err := GetPubspec(dir)
 	if err != nil {
-		return false, gcp.InternalErrorf("reading pubspec.yaml: %v", err)
-	}
-
-	var ps Pubspec
-	if err := yaml.Unmarshal(rawpjs, &ps); err != nil {
 		return false, gcp.UserErrorf("unmarshalling pubspec.yaml: %v", err)
 	}
 
@@ -198,34 +191,4 @@ func GetPubspec(dir string) (Pubspec, error) {
 		return Pubspec{}, gcp.UserErrorf("unmarshalling pubspec.yaml: %v", err)
 	}
 	return ps, nil
-}
-
-func main() {
-	var info Pubspec
-	yamlString := `name: ffbah_example
-
-workspace:
-  - server
-  - app
-
-environment:
-  sdk: ">=3.7.0 <4.0.0"
-
-dependencies:
-  flutter:
-    sdk: flutter
-  http: ^1.4.0
-  shelf: ^1.4.0
-  shelf_router: ^1.1.0
-
-dev_dependencies:
-  melos: ^7.0.0-dev.7
-`
-	if err := yaml.Unmarshal([]byte(yamlString), &info); err != nil {
-		return
-	}
-	fmt.Printf("sup: %s", info)
-	fmt.Printf("sup: %s", info.Buildpack.Server)
-	fmt.Printf("sup: %s", info.Buildpack.Static)
-
 }

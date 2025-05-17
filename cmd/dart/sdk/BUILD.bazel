@@ -27,6 +27,7 @@ go_binary(
     ],
     deps = [
         "//pkg/dart",
+        "//pkg/flutter",
         "//pkg/gcpbuildpack",
         "//pkg/runtime",
     ],

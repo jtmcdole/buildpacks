@@ -28,8 +28,8 @@ import (
 	gcp "github.com/GoogleCloudPlatform/buildpacks/pkg/gcpbuildpack"
 	"github.com/GoogleCloudPlatform/buildpacks/pkg/golang"
 	"github.com/GoogleCloudPlatform/buildpacks/pkg/version"
-	"github.com/buildpacks/libcnb/v2"
 	"github.com/Masterminds/semver"
+	"github.com/buildpacks/libcnb/v2"
 )
 
 var (
@@ -177,7 +177,15 @@ func InstallFlutterSDK(ctx *gcp.Context, layer *libcnb.Layer, version string, ar
 		return err
 	}
 
-	if _, err := ctx.Exec([]string{"tar", "xJ", tar.Name(), "--strip-components", "1", "-d", layer.Path}); err != nil {
+	if _, err := ctx.Exec([]string{"tar", "xJf", tar.Name(), "--strip-components=1", "-C", layer.Path}); err != nil {
+		return fmt.Errorf("extracting Flutter SDK: %v", err)
+	}
+
+	if _, err := ctx.Exec([]string{"bin/flutter", "doctor"}, gcp.WithWorkDir(layer.Path)); err != nil {
+		return fmt.Errorf("extracting Flutter SDK: %v", err)
+	}
+
+	if _, err := ctx.Exec([]string{"bin/flutter", "precache", "--web"}, gcp.WithWorkDir(layer.Path)); err != nil {
 		return fmt.Errorf("extracting Flutter SDK: %v", err)
 	}
 
@@ -186,7 +194,6 @@ func InstallFlutterSDK(ctx *gcp.Context, layer *libcnb.Layer, version string, ar
 
 	return nil
 }
-
 
 // InstallTarballIfNotCached installs a runtime tarball hosted on dl.google.com into the provided layer
 // with caching.

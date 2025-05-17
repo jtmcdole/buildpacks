@@ -49,18 +49,44 @@ func detectFn(ctx *gcp.Context) (gcp.DetectResult, error) {
 	return gcp.OptIn("found .dart files"), nil
 }
 
-func buildFn(ctx *gcp.Context) error {
-
-	br, err := dart.HasBuildRunner(ctx.ApplicationRoot())
+func maybeRunBuildRunner(ctx *gcp.Context, dir string) error {
+	br, err := dart.HasBuildRunner(dir)
 	if err != nil {
 		return err
 	}
 	if br {
 		// Run build runner.
-		if _, err := ctx.Exec([]string{"dart", "run", "build_runner", "build", "--delete-conflicting-outputs"}, gcp.WithUserAttribution); err != nil {
+		if _, err := ctx.Exec([]string{"dart", "run", "build_runner", "build", "--delete-conflicting-outputs"}, gcp.WithUserAttribution, gcp.WithWorkDir(dir)); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func buildFn(ctx *gcp.Context) error {
+	rootPubspec, err := flutter.GetPubspec(ctx.ApplicationRoot())
+	if err != nil {
+		return err
+	}
+	server := filepath.Join(ctx.ApplicationRoot(), *rootPubspec.Buildpack.Server)
+	static := filepath.Join(ctx.ApplicationRoot(), *rootPubspec.Buildpack.Static)
+
+	if rootPubspec.Buildpack.Prebuild != nil {
+		if _, err := ctx.Exec([]string{"sh", "-c", *rootPubspec.Buildpack.Prebuild}, gcp.WithUserAttribution, gcp.WithWorkDir(ctx.ApplicationRoot())); err != nil {
+			return err
+		}
+	}
+
+	err = maybeRunBuildRunner(ctx, server)
+	if err != nil {
+		return err
+	}
+
+	err = maybeRunBuildRunner(ctx, static)
+	if err != nil {
+		return err
+	}
+
 	// Create a layer for the compiled binary.  Add it to PATH in case
 	// users wish to invoke the binary manually.
 	bl, err := ctx.Layer("bin", gcp.LaunchLayer)
@@ -70,18 +96,30 @@ func buildFn(ctx *gcp.Context) error {
 	bl.LaunchEnvironment.Prepend("PATH", string(os.PathListSeparator), bl.Path)
 	outBin := filepath.Join(bl.Path, "server")
 
-	buildable, err := dartBuildable(ctx)
-	if err != nil {
-		return fmt.Errorf("unable to find a valid buildable: %w", err)
+	// Build the server first
+	buildable, ok := os.LookupEnv(env.Buildable)
+	if !ok {
+		buildable = "bin/server.dart"
 	}
-
-	// Build the application.
 	bld := []string{"dart", "compile", "exe", buildable, "-o", outBin}
-	if _, err := ctx.Exec(bld, gcp.WithUserAttribution); err != nil {
+	if _, err := ctx.Exec(bld, gcp.WithUserAttribution, gcp.WithWorkDir(server)); err != nil {
+		return err
+	}
+	ctx.AddWebProcess([]string{"/bin/bash", "-c", outBin})
+
+	// Build the webapp
+	// "--output", filepath.Join(bl.Path, "static")
+	bld = []string{"flutter", "build", "web"} // /workspace/<app>/build/web
+	if _, err := ctx.Exec(bld, gcp.WithUserAttribution, gcp.WithWorkDir(static)); err != nil {
 		return err
 	}
 
-	ctx.AddWebProcess([]string{"/bin/bash", "-c", outBin})
+	if rootPubspec.Buildpack.Postbuild != nil {
+		if _, err := ctx.Exec([]string{"sh", "-c", *rootPubspec.Buildpack.Postbuild}, gcp.WithUserAttribution, gcp.WithWorkDir(bl.Path)); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
