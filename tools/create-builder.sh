@@ -42,4 +42,4 @@ tar xvf "$tar" -C "$temp"
 
 echo "Creating builder:"
 pack builder create "$name" --config="${temp}/${descriptor}" --pull-policy=never
-docker inspect --format='{{index .Id}}' "$name" > "$sha"
+docker inspect '--format={{.Id}}' "$name" > "$sha"
