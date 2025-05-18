@@ -107,7 +107,7 @@ func TestInstallFlutterSDK(t *testing.T) {
 		{
 			name:         "successful install",
 			responseFile: "testdata/dummy-flutter-sdk.tar.xz",
-			wantFile:     "lib/foo.txt",
+			wantFile:     "bin/flutter",
 		},
 		{
 			name:       "invalid version",
@@ -134,8 +134,8 @@ func TestInstallFlutterSDK(t *testing.T) {
 				testserver.WithFile(testdata.MustGetPath(tc.responseFile)),
 				testserver.WithMockURL(&dartSdkURL))
 
-			version := "2.15.1"
-			err := InstallFlutterSDK(ctx, l, version, "archive")
+			version := "3.29.3"
+			err := InstallFlutterSDK(ctx, l, version, "stable/linux/flutter_linux_3.29.3-stable.tar.xz")
 
 			if tc.wantError && err == nil {
 				t.Fatalf("Expecting error but got nil")

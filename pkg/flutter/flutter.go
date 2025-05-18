@@ -65,9 +65,9 @@ type Buildpack struct {
 
 // Pubspec represents a small view of a pubspec.yaml.
 type Pubspec struct {
-	Dependencies    map[string]interface{} `yaml:"dependencies"`
-	DevDependencies map[string]interface{} `yaml:"dev_dependencies"`
-	Buildpack       *Buildpack             `yaml:"buildpack"`
+	Dependencies    map[string]any `yaml:"dependencies"`
+	DevDependencies map[string]any `yaml:"dev_dependencies"`
+	Buildpack       *Buildpack     `yaml:"buildpack"`
 }
 
 // findStableRelease searches for the stable release based on CurrentRelease.Stable hash.
